@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="300"><title>Прогноз тривог</title>
+<style>
+body{font:15px/1.5 system-ui,sans-serif;max-width:860px;margin:2rem auto;padding:0 16px;color:#1b1b1b;background:#fff}
+table{border-collapse:collapse;width:100%}th,td{padding:6px 10px;text-align:left;border-bottom:1px solid #ddd}
+.bar{height:8px;background:#e5e5e5;border-radius:4px;min-width:120px}.bar i{display:block;height:8px;border-radius:4px;background:#888}
+.l-низька i{background:#4a9}.l-підвищена i{background:#db3}.l-тривога{color:#b50}.l-висока i,.l-тривога i{background:#c33}
+.warn{background:#fff3cd;color:#5c4400;padding:8px 12px;border-radius:6px;margin:8px 0}.note{font-size:13px;color:#555}.tag{font-weight:600}
+@media(prefers-color-scheme:dark){body{background:#161616;color:#eee}th,td{border-color:#333}.bar{background:#333}.warn{background:#fff3cd;color:#5c4400;padding:8px 12px;border-radius:6px;margin:8px 0}.note{color:#aaa}}
+</style></head><body>
+<h1>Ризик початку тривоги в найближчу годину</h1>
+<p>Вікно: <b>{{ f.forecast_for.strftime('%d.%m.%Y %H:%M') }} – {{ f.window_end.strftime('%H:%M') }}</b> (Київ).
+Зараз {{ f.now.strftime('%d.%m.%Y %H:%M') }}, оновлено {{ f.updated_at.strftime('%H:%M') }}. Перерахунок щогодини.</p>
+{% if f.lag_h > 0 %}<div class="warn">Дані відстають на ~{{ '%.0f' % f.lag_h }} год (джерело оновлюється раз на добу). Прогноз показано для {{ f.forecast_for.strftime('%d.%m %H:%M') }} — останньої години з відомою історією; для поточної години він був би ненадійним.</div>{% endif %}
+{% if f.refresh_error %}<div class="warn">Оновлення даних не вдалось: {{ f.refresh_error }}. Показано попередні дані.</div>{% endif %}
+<table>
+<tr><th>Область</th><th>Ймовірність</th><th></th><th>Рівень</th></tr>
+{% for r in f.rows %}
+<tr><td>{{ r.oblast }}</td>
+<td>{% if r.p is not none %}{{ '%.0f' % (r.p*100) }}%{% else %}—{% endif %}</td>
+<td class="l-{{ r.level.split()[0] }}"><div class="bar"><i style="width:{{ (r.p or 0)*100 }}%"></i></div></td>
+<td class="tag">{{ r.level }}{% if r.expected %} ⚠{% endif %}</td></tr>
+{% endfor %}
+</table>
+<p class="note">«Тривога очікується» — ймовірність ≥ {{ '%.0f' % (f.threshold*100) }}%. Для областей, де тривога вже триває, прогноз початку не рахується.</p>
+<h3>Якість моделі (тест {{ f.test_period[0][:10] }} – {{ f.test_period[1][:10] }})</h3>
+<p>PR-AUC {{ '%.3f' % f.metrics.pr_auc }} · ROC-AUC {{ '%.3f' % f.metrics.roc_auc }} · Brier {{ '%.4f' % f.metrics.brier }}.
+При порозі {{ '%.2f' % f.threshold }}: recall ≈ 0.68, precision ≈ 0.41, хибних сигналів ≈ 30% годин без тривоги.</p>
+<p class="note">Навчання до {{ f.train_to[:10] }}. Дані: офіційні до {{ f.splice_cut.strftime('%d.%m.%Y %H:%M') }}, далі волонтерські —
+визначення тривоги різне (область vs будь-який район), тому є розрив. Тест короткий (14 днів), перевага над простим baseline невелика.</p>
+</body></html>

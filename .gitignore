@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+# сирі дані — завантажуються з Vadimkin/ukrainian-air-raid-sirens-dataset
+*.csv
+*.pkl
+airalerts.json
+datasets/
+ukrainian-air-raid-sirens-dataset/
